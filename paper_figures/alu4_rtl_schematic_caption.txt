@@ -1,0 +1,1 @@
+Figure X. Technology-independent RTL operator schematic of the 4-bit ALU benchmark generated before gate mapping. Multi-bit ports are annotated by bus width, and Yosys operators are indexed R1-R14 to preserve a concise connection between the implementation diagram and the synthesized design.

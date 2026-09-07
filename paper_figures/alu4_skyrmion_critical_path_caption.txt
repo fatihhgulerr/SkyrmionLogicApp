@@ -1,0 +1,1 @@
+Figure X. Recreated skyrmion implementation of the mapped critical path for the 4-bit ALU benchmark. The serpentine racetrack connects the ordered mapped gates CP1-CP14 from the critical input to the inferred output; dashed red boundaries identify the application gate mosaics. The complete 103-gate mapped netlist is retained in the accompanying analysis report.

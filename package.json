@@ -1,0 +1,13 @@
+{
+  "name": "skyrmion_gate_app",
+  "version": "1.0.0",
+  "description": "Verilog-to-skyrmion gate mapper and benchmark cost estimator",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,13 @@
+SAFARI'DE ACMA
+================
+
+1. ZIP dosyasini tamamen cikarin.
+2. "Open Skyrmion App in Safari.command" dosyasina cift tiklayin.
+3. Acilan Terminal penceresini uygulamayi kullanirken acik tutun.
+
+index.html dosyasini dogrudan acmayin. Safari bu dosyayi file:// olarak
+actiginda yerel Yosys servisine ulasamaz ve sentez calismaz.
+
+macOS ilk acilista guvenlik uyarisi verirse dosyaya sag tiklayip "Open" secin.
+Baslatici Node.js ve Yosys'i otomatik bulur, sunucunun hazir olmasini bekler ve
+dogru http://127.0.0.1 adresini Safari'de acar.

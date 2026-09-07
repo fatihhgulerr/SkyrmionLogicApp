@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="17.10cm" height="11.24cm" viewBox="0 0 1400 920" role="img" aria-labelledby="title desc">
+  <title id="title">Benchmark analysis flow for CMOS and skyrmion implementations</title>
+  <desc id="desc">The same RTL benchmark is processed by a CMOS OpenLane flow and a skyrmion mapping flow. Both branches produce the same latency, energy or power, and area or footprint metric set for comparison.</desc>
+  <metadata>RSC Nanoscale double-column figure, 17.10 cm by 11.24 cm. Editable vector master.</metadata>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#3f4b50"/>
+    </marker>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #1d262a; }
+      .flow { fill: none; stroke: #3f4b50; stroke-width: 2; marker-end: url(#arrow); }
+      .fork { fill: none; stroke: #3f4b50; stroke-width: 2; }
+      .lane { fill: none; stroke: #a7b0b4; stroke-width: 1.2; stroke-dasharray: 6 5; }
+      .process { fill: #ffffff; stroke: #4f5c61; stroke-width: 1.5; }
+      .input { fill: #f1f3f4; stroke: #4f5c61; stroke-width: 1.6; }
+      .metric-row { fill: #f5f6f6; stroke: #6f7b80; stroke-width: 1.2; }
+      .comparison { fill: #ffffff; stroke: #4f5c61; stroke-width: 1.6; }
+      .micro-accent { stroke: #376b85; stroke-width: 3; }
+      .spin-accent { stroke: #9b4b25; stroke-width: 3; }
+      .lane-title { font-size: 21px; font-weight: 700; }
+      .tool { font-size: 22px; font-weight: 700; }
+      .detail { font-size: 18px; fill: #3d494e; }
+      .artifact { font-size: 15px; font-style: italic; fill: #68757a; }
+      .metric { font-size: 16px; font-weight: 700; }
+      .small { font-size: 15px; fill: #68757a; }
+      .compare-title { font-size: 22px; font-weight: 700; }
+      .compare-detail { font-size: 16px; fill: #3d494e; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="920" fill="#ffffff"/>
+
+  <!-- common input -->
+  <g transform="translate(450,22)">
+    <path class="input" d="M0 0 H500 V72 H0 Z"/>
+    <text class="tool" x="250" y="31" text-anchor="middle">Benchmark RTL</text>
+    <text class="detail" x="250" y="57" text-anchor="middle">Verilog / SystemVerilog · identical functionality and I/O</text>
+  </g>
+
+  <path class="fork" d="M700 94 V125 H375 V154"/>
+  <path class="fork" d="M700 125 H1025 V154"/>
+  <path class="flow" d="M375 154 V183"/>
+  <path class="flow" d="M1025 154 V183"/>
+  <text class="small" x="714" y="117">same design</text>
+
+  <!-- lane labels and boundaries -->
+  <text class="lane-title" x="100" y="155">(a) Microelectronic reference</text>
+  <line class="micro-accent" x1="100" y1="166" x2="650" y2="166"/>
+  <rect class="lane" x="100" y="174" width="550" height="575"/>
+
+  <text class="lane-title" x="750" y="155">(b) Skyrmion implementation</text>
+  <line class="spin-accent" x1="750" y1="166" x2="1300" y2="166"/>
+  <rect class="lane" x="750" y="174" width="550" height="575"/>
+
+  <!-- CMOS / OpenLane path -->
+  <g transform="translate(175,190)">
+    <rect class="process" width="400" height="82"/>
+    <text class="tool" x="200" y="31" text-anchor="middle">Yosys / ABC</text>
+    <text class="detail" x="200" y="58" text-anchor="middle">logic synthesis and CMOS cell mapping</text>
+  </g>
+  <path class="flow" d="M375 272 V351"/>
+  <text class="artifact" x="388" y="316">CMOS gate-level netlist</text>
+
+  <g transform="translate(175,360)">
+    <rect class="process" width="400" height="82"/>
+    <text class="tool" x="200" y="31" text-anchor="middle">OpenLane</text>
+    <text class="detail" x="200" y="58" text-anchor="middle">floorplan → placement / CTS → routing</text>
+  </g>
+  <path class="flow" d="M375 442 V521"/>
+  <text class="artifact" x="388" y="486">post-route database and reports</text>
+
+  <g transform="translate(175,530)">
+    <rect class="process" width="400" height="82"/>
+    <text class="tool" x="200" y="31" text-anchor="middle">Report extraction</text>
+    <text class="detail" x="200" y="58" text-anchor="middle">post-layout implementation results</text>
+  </g>
+  <path class="flow" d="M375 612 V649"/>
+
+  <g transform="translate(135,657)">
+    <rect class="metric-row" width="480" height="48"/>
+    <line x1="160" y1="0" x2="160" y2="48" stroke="#a3adb1" stroke-width="1"/>
+    <line x1="320" y1="0" x2="320" y2="48" stroke="#a3adb1" stroke-width="1"/>
+    <text class="metric" x="80" y="30" text-anchor="middle">latency</text>
+    <text class="metric" x="240" y="30" text-anchor="middle">energy / power</text>
+    <text class="metric" x="400" y="30" text-anchor="middle">area / footprint</text>
+  </g>
+  <text class="small" x="375" y="723" text-anchor="middle">source: post-layout reports (core / die area)</text>
+
+  <!-- skyrmion path -->
+  <g transform="translate(825,190)">
+    <rect class="process" width="400" height="82"/>
+    <text class="tool" x="200" y="31" text-anchor="middle">Yosys / ABC</text>
+    <text class="detail" x="200" y="58" text-anchor="middle">logic synthesis and supported-gate mapping</text>
+  </g>
+  <path class="flow" d="M1025 272 V351"/>
+  <text class="artifact" x="1038" y="316">skyrmion gate-level netlist</text>
+
+  <g transform="translate(825,360)">
+    <rect class="process" width="400" height="82"/>
+    <text class="tool" x="200" y="31" text-anchor="middle">Netlist parser</text>
+    <text class="detail" x="200" y="58" text-anchor="middle">connectivity and critical-path traversal</text>
+  </g>
+  <path class="flow" d="M1025 442 V521"/>
+  <text class="artifact" x="1038" y="486">mapped critical path</text>
+
+  <g transform="translate(825,530)">
+    <rect class="process" width="400" height="82"/>
+    <text class="tool" x="200" y="31" text-anchor="middle">Skyrmion cost model</text>
+    <text class="detail" x="200" y="58" text-anchor="middle">gate / racetrack reconstruction and analysis</text>
+  </g>
+  <path class="flow" d="M1025 612 V649"/>
+
+  <g transform="translate(785,657)">
+    <rect class="metric-row" width="480" height="48"/>
+    <line x1="160" y1="0" x2="160" y2="48" stroke="#a3adb1" stroke-width="1"/>
+    <line x1="320" y1="0" x2="320" y2="48" stroke="#a3adb1" stroke-width="1"/>
+    <text class="metric" x="80" y="30" text-anchor="middle">latency</text>
+    <text class="metric" x="240" y="30" text-anchor="middle">energy / power</text>
+    <text class="metric" x="400" y="30" text-anchor="middle">area / footprint</text>
+  </g>
+  <text class="small" x="1025" y="723" text-anchor="middle">source: mapped model (gate / track-count proxy)</text>
+
+  <!-- matched comparison -->
+  <path class="fork" d="M375 749 V760 H700"/>
+  <path class="fork" d="M1025 749 V760 H700"/>
+  <path class="flow" d="M700 760 V798"/>
+
+  <g transform="translate(250,805)">
+    <rect class="comparison" width="900" height="96"/>
+    <text class="compare-title" x="450" y="31" text-anchor="middle">Matched cross-technology comparison</text>
+    <line x1="24" y1="46" x2="876" y2="46" stroke="#b4bcc0" stroke-width="1"/>
+    <text class="small" x="450" y="69" text-anchor="middle">identical RTL functionality and metric set</text>
+    <text class="compare-detail" x="450" y="87" text-anchor="middle">latency · energy / power · area / implementation footprint</text>
+  </g>
+</svg>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="js/safariCompat.js"></script>
+<script src="js/script.js" defer type="module"></script>
+<link rel="stylesheet" href="css/style.css">
+<title>Skyrmion Verilog Mapper</title>
+</head>
+<body>
+<div id="fileProtocolWarning" class="protocol-warning" hidden role="alert">
+    <strong>Open this app with its Safari launcher.</strong>
+    <span>Safari cannot run the Yosys service from this <code>index.html</code> file. Close this tab and double-click <code>Open Skyrmion App in Safari.command</code>.</span>
+</div>
+<script>
+    if (window.location.protocol === "file:") {
+        document.getElementById("fileProtocolWarning").hidden = false;
+    }
+</script>
+<header class="app-header">
+    <div>
+        <p class="eyebrow">Benchmark-paper analysis tool</p>
+        <h1>Skyrmion Verilog Mapper</h1>
+        <p>Compile Verilog with Yosys, recreate the mapped logic with skyrmion gate primitives, and estimate energy and latency.</p>
+    </div>
+    <span id="backendStatus" class="backend-status">Checking Yosys…</span>
+</header>
+
+<main class="app-main">
+    <section class="panel import-panel" aria-labelledby="importHeading">
+        <div class="section-heading">
+            <div>
+                <span class="step-badge">1</span>
+                <h2 id="importHeading">Import Verilog</h2>
+            </div>
+            <div class="example-picker">
+                <label for="exampleSelect">Example</label>
+                <select id="exampleSelect">
+                    <option value="full_adder">Full adder</option>
+                    <option value="alu4">4-bit ALU</option>
+                    <option value="parity8">8-bit parity</option>
+                    <option value="registered_accumulator4">Registered accumulator</option>
+                </select>
+                <button type="button" id="loadExample" class="secondary-button">Load example</button>
+            </div>
+        </div>
+
+        <div class="import-grid">
+            <div class="source-column">
+                <label class="file-drop" for="verilogFile">
+                    <strong>Choose a .v or .sv file</strong>
+                    <span>The source stays on this machine and is sent only to the local Yosys service.</span>
+                    <input id="verilogFile" type="file" accept=".v,.sv,text/plain">
+                </label>
+                <label for="verilogSource">Verilog source</label>
+                <textarea id="verilogSource" spellcheck="false" placeholder="module example(input a, b, output y);&#10;  assign y = a &amp; b;&#10;endmodule"></textarea>
+            </div>
+
+            <div class="settings-column">
+                <label for="topModule">Top module <small>(blank = auto-detect)</small></label>
+                <input id="topModule" type="text" placeholder="full_adder" autocomplete="off">
+
+                <label for="currentDensity">Current density, j <small>(×10¹¹ A/m²)</small></label>
+                <input id="currentDensity" type="number" min="2.2" max="3.6" step="0.1" value="3.2">
+                <p class="field-note">The velocity interpolation is restricted to 2.2–3.6 × 10¹¹ A/m².</p>
+
+                <div class="model-note">
+                    <strong>Paper model</strong>
+                    <span>ρ = 27 µΩ·cm</span>
+                    <span>0.475 µm track · 1 nm effective thickness</span>
+                    <span>1.5 bends per sink connection</span>
+                </div>
+
+                <button type="button" id="analyzeVerilog" class="primary-button">Synthesize and analyze</button>
+            </div>
+        </div>
+        <p id="importStatus" class="status-message" data-kind="neutral">Load a design to begin.</p>
+    </section>
+
+    <section id="analysisResults" class="panel results-panel" hidden aria-labelledby="resultsHeading">
+        <div class="section-heading">
+            <div>
+                <span class="step-badge">2</span>
+                <h2 id="resultsHeading">Mapped skyrmion result</h2>
+                <p id="analysisSummary"></p>
+            </div>
+            <div class="button-row">
+                <a class="secondary-button button-link" href="paper_figures/benchmark_analysis_workflow_rsc.svg" download>Benchmark workflow SVG</a>
+                <button type="button" id="downloadCsvReport" class="secondary-button">Download CSV</button>
+                <button type="button" id="downloadJsonReport" class="secondary-button">Download full JSON</button>
+                <button type="button" id="recreateDesign" class="primary-button">Recreate in editor</button>
+            </div>
+        </div>
+
+        <div id="metricCards" class="metric-grid"></div>
+
+        <div class="result-grid">
+            <article class="result-card">
+                <h3>Gate mapping</h3>
+                <table>
+                    <thead><tr><th>Skyrmion gate</th><th>Count</th></tr></thead>
+                    <tbody id="gateCountsBody"></tbody>
+                </table>
+            </article>
+
+            <article class="result-card energy-card">
+                <h3>Energy and critical-path breakdown</h3>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th><th>Count</th><th>Mag. (fJ)</th><th>Joule (fJ)</th><th>Total (fJ)</th><th>CP delay (ns)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="energyBody"></tbody>
+                    </table>
+                </div>
+            </article>
+        </div>
+
+        <article class="result-card graph-card rtl-card">
+            <div class="graph-heading">
+                <div>
+                    <h3>RTL schematic</h3>
+                    <p id="rtlGraphNote"></p>
+                </div>
+                <div class="diagram-actions">
+                    <span class="diagram-key rtl-key">Yosys RTL</span>
+                    <button type="button" id="downloadRtlSvg" class="diagram-export">SVG (vector)</button>
+                    <button type="button" id="downloadRtlTiff" class="diagram-export">TIFF (600 dpi)</button>
+                </div>
+            </div>
+            <div class="graph-scroll rtl-scroll"><svg id="rtlGraph" role="img" aria-label="Yosys RTL schematic"></svg></div>
+        </article>
+
+        <article class="result-card graph-card">
+            <div class="graph-heading">
+                <div>
+                    <h3>Mapped gate network</h3>
+                    <p id="graphNote"></p>
+                </div>
+                <div class="diagram-actions">
+                    <span class="critical-key">Critical path</span>
+                    <label class="diagram-mode-label" for="networkViewMode">
+                        View
+                        <select id="networkViewMode">
+                            <option value="paper">Critical path</option>
+                            <option value="full">Full design (all gates)</option>
+                        </select>
+                    </label>
+                    <button type="button" id="downloadNetworkSvg" class="diagram-export">SVG (vector)</button>
+                    <button type="button" id="downloadNetworkTiff" class="diagram-export">TIFF (600 dpi)</button>
+                </div>
+            </div>
+            <div class="graph-scroll"><svg id="netlistGraph" role="img" aria-label="Mapped skyrmion gate network"></svg></div>
+        </article>
+
+        <details class="warning-box">
+            <summary>Model scope and synthesis warnings</summary>
+            <ul id="analysisWarnings"></ul>
+        </details>
+    </section>
+
+    <details id="editorDetails" class="panel editor-details">
+        <summary><span class="step-badge">3</span><strong>Skyrmion geometry editor</strong><span>Inspect or manually adjust recreated gate tiles</span></summary>
+        <div id="root">
+            <div class="controls" id="controls">
+                <button type="button" name="addColLeft" id="addColLeft" class="iconButton" title="Add column left"><img src="assets/icons/CL+.svg" alt=""></button>
+                <button type="button" name="addColRight" id="addColRight" class="iconButton" title="Add column right"><img src="assets/icons/CR+.svg" alt=""></button>
+                <button type="button" name="delCol" id="delCol" class="iconButton" title="Delete column"><img src="assets/icons/DC.svg" alt=""></button>
+                <button type="button" name="addRowTop" id="addRowTop" class="iconButton" title="Add row top"><img src="assets/icons/RT+.svg" alt=""></button>
+                <button type="button" name="addRowBottom" id="addRowBottom" class="iconButton" title="Add row bottom"><img src="assets/icons/RB+.svg" alt=""></button>
+                <button type="button" name="delRow" id="delRow" class="iconButton" title="Delete row"><img src="assets/icons/DR.svg" alt=""></button>
+                <button type="button" name="rot" id="rot" class="iconButton" title="Rotate"><img src="assets/icons/ROT.svg" alt=""></button>
+                <label for="order">Order</label>
+                <input type="text" name="order" id="order">
+                <button type="button" name="step" id="step">Step</button>
+                <button type="button" name="resetSim" id="resetSim">Reset sim</button>
+                <button type="button" name="imageType" id="imageType">Geometry</button>
+                <button id="saveDesign">Save Design</button>
+                <button id="loadDesign">Load Design</button>
+            </div>
+            <div class="blockButtons" id="blockButtons"></div>
+            <div class="simContainer"></div>
+        </div>
+    </details>
+</main>
+</body>
+</html>
