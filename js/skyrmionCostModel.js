@@ -1,3 +1,5 @@
+export const MODEL_VERSION = "benchmark-paper-rho27-v3-velocity618";
+
 export const MODEL = Object.freeze({
     resistivityOhmM: 27e-8,
     currentDensityMinAM2: 2.2e11,
@@ -10,8 +12,10 @@ export const MODEL = Object.freeze({
     racetrackMagneticEnergyFJ: 0.0005,
     bendMagneticEnergyFJ: 0.0012,
     sequentialDelayNS: 12.0,
-    velocitySlopeMPerSPer1e11: 43.06300813,
-    velocityInterceptMPerS: 22.14105691,
+    // Supplied simulation fit: v = 6.18e-10 j in SI units.
+    // Transport only; intrinsic gate energies and delays stay fixed.
+    velocitySlopeMPerSPer1e11: 61.8,
+    velocityInterceptMPerS: 0,
 });
 
 export const BASE_GATE_COSTS = Object.freeze({
@@ -101,14 +105,7 @@ function analyzeCriticalPath(netlist, currentDensityAM2) {
     const visit = (cellId) => {
         if (memo.has(cellId)) return memo.get(cellId);
         if (visiting.has(cellId)) {
-            return {
-                totalNS: 0,
-                gateNS: 0,
-                straightNS: 0,
-                bendNS: 0,
-                path: [`LOOP:${cellId}`],
-                level: 0,
-            };
+            throw new Error(`Combinational timing loop at ${cellId}; no finite critical path.`);
         }
 
         visiting.add(cellId);
@@ -144,7 +141,7 @@ function analyzeCriticalPath(netlist, currentDensityAM2) {
 
         for (const bit of numericBits(cell.inputBits)) {
             const parentCellId = driverByBit.get(bit);
-            if (parentCellId && parentCellId !== cellId) {
+            if (parentCellId) {
                 const parent = visit(parentCellId);
                 const candidateTotal = parent.totalNS + connectionDelayNS;
                 if (!hasConnectedInput || candidateTotal > bestParent.totalNS) {
@@ -187,9 +184,33 @@ function analyzeCriticalPath(netlist, currentDensityAM2) {
     };
 
     let critical = { totalNS: 0, gateNS: 0, straightNS: 0, bendNS: 0, path: [], level: 0 };
-    for (const cell of netlist.cells) {
-        const candidate = visit(cell.id);
+    // Populate all cell levels, and reject cycles even in disconnected logic.
+    for (const cell of netlist.cells) visit(cell.id);
+    const considerEndpoint = (bit, endpoint) => {
+        const driver = driverByBit.get(bit);
+        const parent = driver ? visit(driver) : {
+            totalNS: 0, gateNS: 0, straightNS: 0, bendNS: 0,
+            path: inputPortByBit.has(bit) ? [`INPUT:${inputPortByBit.get(bit)}`] : [], level: 0,
+        };
+        const candidate = {
+            ...parent,
+            totalNS: parent.totalNS + connectionDelayNS,
+            straightNS: parent.straightNS + straightDelayNS,
+            bendNS: parent.bendNS + MODEL.bendsPerSink * bendDelayNS,
+            endpoint: { ...endpoint, bit },
+        };
         if (candidate.totalNS > critical.totalNS) critical = candidate;
+    };
+    for (const port of netlist.ports.filter((p) => p.direction === "output")) {
+        for (const bit of numericBits(port.bits)) considerEndpoint(bit, { type: "output", name: port.name });
+    }
+    for (const cell of netlist.cells.filter((c) => c.sequential)) {
+        // Clock-tree propagation is not a data-path endpoint. D, enable and
+        // reset/control arrivals are included; setup/recovery remain unmodeled.
+        const pins = cell.inputPins || [{ name: "D", bits: cell.inputBits }];
+        for (const pin of pins.filter((p) => !/^(C|CLK|CLOCK)$/i.test(p.name))) {
+            for (const bit of numericBits(pin.bits)) considerEndpoint(bit, { type: "state", cellId: cell.id, pin: pin.name });
+        }
     }
 
     return {
@@ -259,10 +280,11 @@ export function analyzeSkyrmionNetlist(netlist, currentDensityAM2 = MODEL.refere
     if (unsupportedCellCount > 0) {
         warnings.push(`${unsupportedCellCount} unsupported cells are excluded from gate energy.`);
     }
-    warnings.push("Routing uses one straight track per Yosys net and 1.5 bends per sink; it is not placed-and-routed geometry.");
+    warnings.push("Routing uses one straight track per unique sink-connected signal bit (including clock/control), with aliases deduplicated and buses expanded; floor(1.5 × sinks) bends. This is not placed-and-routed geometry.");
+    warnings.push("Timing includes the final output/state connection and a 12 ns state-launch proxy; setup, clock distribution and synchronization are not physically calibrated.");
 
     return {
-        modelVersion: "benchmark-paper-rho27-v1",
+        modelVersion: MODEL_VERSION,
         currentDensityAM2: currentDensity,
         velocityMPerS: velocityMPerS(currentDensity),
         gateCounts,
@@ -303,6 +325,7 @@ export function analyzeSkyrmionNetlist(netlist, currentDensityAM2 = MODEL.refere
             racetrackDelayNS: criticalPath.straightNS,
             bendDelayNS: criticalPath.bendNS,
             criticalPath: criticalPath.path,
+            criticalEndpoint: criticalPath.endpoint || null,
             cellLevels: criticalPath.cellLevels,
             averagePowerUW,
         },

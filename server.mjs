@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { analyzeSkyrmionNetlist, MODEL } from "./js/skyrmionCostModel.js";
+import { analyzeSkyrmionNetlist, MODEL, MODEL_VERSION } from "./js/skyrmionCostModel.js";
 
 const APP_ROOT = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PORT = Number(process.env.PORT || 4173);
@@ -162,11 +162,22 @@ function normalizeYosysNetlist(design, requestedTop = "", mode = "mapped") {
     });
 
     let sinkConnections = 0;
+    // Count bit identities, not net-name records: aliases share an identity,
+    // whereas each bus bit is a distinct connection. Retain the established
+    // scope (including sequential control/clock pins), but omit unused nets
+    // and literal constants. This is a routing proxy, not extracted geometry.
+    const routedBits = new Set();
     for (const cell of cells) {
-        sinkConnections += cell.inputBits.filter((bit) => Number.isInteger(bit)).length;
+        for (const bit of cell.inputBits.filter(Number.isInteger)) {
+            sinkConnections += 1;
+            routedBits.add(bit);
+        }
     }
     for (const port of ports.filter((candidate) => candidate.direction === "output")) {
-        sinkConnections += port.bits.filter((bit) => Number.isInteger(bit)).length;
+        for (const bit of port.bits.filter(Number.isInteger)) {
+            sinkConnections += 1;
+            routedBits.add(bit);
+        }
     }
 
     const bitNameByBit = new Map();
@@ -212,7 +223,10 @@ function normalizeYosysNetlist(design, requestedTop = "", mode = "mapped") {
         ports,
         cells,
         edges,
-        netCount: Object.keys(module.netnames || {}).length,
+        netCount: routedBits.size,
+        netNameRecordCount: Object.keys(module.netnames || {}).length,
+        routedBits: [...routedBits].sort((a, b) => a - b),
+        routingScope: "one-straight-per-unique-sink-connected-bit-including-clock-control",
         sinkConnections,
         sourceModuleCount: moduleEntries.length,
     };
@@ -310,6 +324,7 @@ async function serveStatic(request, response) {
         response.writeHead(200, {
             "Content-Type": MIME_TYPES[extname(filePath).toLowerCase()] || "application/octet-stream",
             "Content-Length": content.length,
+            "Cache-Control": "no-store",
         });
         if (request.method === "HEAD") response.end();
         else response.end(content);
@@ -326,7 +341,7 @@ export function createAppServer() {
                 sendJson(response, 200, {
                     ok: true,
                     yosysVersion: await getYosysVersion(),
-                    modelVersion: "benchmark-paper-rho27-v1",
+                    modelVersion: MODEL_VERSION,
                 });
                 return;
             }

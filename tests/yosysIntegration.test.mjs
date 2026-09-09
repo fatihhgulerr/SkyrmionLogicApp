@@ -2,6 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { analyzeVerilog } from "../server.mjs";
+import { segmentDelayNS, MODEL } from "../js/skyrmionCostModel.js";
+
+test("racetrack count expands buses, deduplicates aliases and times direct wires", async () => {
+    for (const width of [1, 8]) {
+        const result = await analyzeVerilog({ verilog: `module wire_probe(input [${width-1}:0] a, output [${width-1}:0] y); wire [${width-1}:0] alias_a; assign alias_a=a; assign y=alias_a; endmodule`, topModule: "wire_probe" });
+        assert.equal(result.analysis.netCount, width);
+        assert.equal(result.analysis.sinkConnections, width);
+        const expected = segmentDelayNS(MODEL.trackLengthM, 3.2e11) + 1.5 * segmentDelayNS(Math.PI/4*MODEL.trackLengthM, 3.2e11);
+        assert.ok(Math.abs(result.analysis.timing.criticalPathDelayNS - expected) < 1e-10);
+        assert.equal(result.analysis.timing.criticalEndpoint.type, "output");
+    }
+});
 
 test("Yosys maps a Verilog full adder to supported skyrmion gates", async () => {
     const verilog = await readFile(new URL("../examples/full_adder.v", import.meta.url), "utf8");

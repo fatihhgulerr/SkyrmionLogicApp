@@ -53,6 +53,7 @@ fi
 app_port="${PORT:-4173}"
 app_url="http://127.0.0.1:${app_port}/"
 health_url="${app_url}api/health"
+expected_model_version="$("$node_binary" --input-type=module -e 'import {MODEL_VERSION} from "./js/skyrmionCostModel.js"; console.log(MODEL_VERSION)')"
 
 PORT="$app_port" YOSYS_BINARY="$yosys_binary" "$node_binary" server.mjs &
 server_pid=$!
@@ -61,7 +62,7 @@ trap 'kill "$server_pid" 2>/dev/null || true' EXIT INT TERM
 server_ready=0
 for attempt in {1..40}; do
     health_payload="$(/usr/bin/curl --silent --fail --max-time 1 "$health_url" 2>/dev/null || true)"
-    if [[ "$health_payload" == *'"modelVersion":"benchmark-paper-rho27-v1"'* ]]; then
+    if [[ "$health_payload" == *"\"modelVersion\":\"${expected_model_version}\""* ]]; then
         server_ready=1
         break
     fi
