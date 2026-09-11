@@ -80,7 +80,7 @@ The estimator mirrors the benchmark-paper model:
 - Effective racetrack resistivity: `27 micro-ohm cm = 2.7e-7 ohm m`.
 - Current-density range: `2.2e11--3.6e11 A/m^2`.
 - Reference current density: `3.2e11 A/m^2`.
-- Straight track: `0.475 um x 0.05 um`, with `1 nm` effective conducting thickness.
+- Straight track: `0.475 um x 0.05 um`, with `2 nm` effective conducting thickness.
 - L-bend path length: `pi/4` times the straight-track length.
 - Routing proxy: one straight racetrack per Yosys net and `1.5` bends per sink.
 - XOR and XNOR energy follows the benchmark's Boolean decomposition.
