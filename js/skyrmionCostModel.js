@@ -7,7 +7,7 @@ export const MODEL = Object.freeze({
     referenceCurrentDensityAM2: 3.2e11,
     trackLengthM: 0.475e-6,
     trackWidthM: 0.05e-6,
-    effectiveConductorThicknessM: 1.0e-9,
+    effectiveConductorThicknessM: 2.0e-9,
     bendsPerSink: 1.5,
     racetrackMagneticEnergyFJ: 0.0005,
     bendMagneticEnergyFJ: 0.0012,
