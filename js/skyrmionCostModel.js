@@ -1,4 +1,4 @@
-export const MODEL_VERSION = "benchmark-paper-rho27-v3-velocity618";
+export const MODEL_VERSION = "benchmark-paper-rho27-v4-teff2nm-velocity618";
 
 export const MODEL = Object.freeze({
     resistivityOhmM: 27e-8,
